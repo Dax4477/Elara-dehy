@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELARA Enterprises | Master Hub</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2e7d32; --secondary: #fbc02d; --bg: #f4f7f6; --text: #333; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* Headers */
+        header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #e0e0e0; padding-bottom: 20px; }
+        h1 { color: var(--primary); margin: 0; font-size: 2.2em; }
+        h2 { font-size: 1.2em; color: #555; margin-top: 5px; font-weight: 400; }
+        
+        /* Layout */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .section { background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        .full-width { grid-column: 1 / -1; }
+
+        /* Form Elements */
+        label { display: block; margin-top: 10px; font-weight: 500; font-size: 0.9em; color: #555; }
+        select, input, button { width: 100%; padding: 12px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; }
+        
+        /* Buttons */
+        button { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; margin-top: 20px; }
+        button:hover { background-color: #1b5e20; }
+        .btn-print { background-color: #1976d2; margin-top: 10px; }
+
+        /* Dynamic SOP Box */
+        #sop-box { background-color: #e8f5e9; border-left: 5px solid var(--primary); padding: 15px; margin-top: 15px; display: none; }
+        #sop-box h4 { margin-top: 0; color: var(--primary); }
+        #sop-box ul { padding-left: 20px; margin: 0; }
+        #sop-box li { margin-bottom: 5px; font-size: 0.9em; }
+
+        /* Results Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: var(--primary); color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        /* Status Badges */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .badge-profit { background-color: #e3f2fd; color: #1565c0; }
+        
+        /* QR Code Area */
+        #qrcode-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px; background: white; border: 1px dashed #ccc; margin-top: 15px; padding: 10px; }
+        
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>ELARA Enterprises</h1>
+        <h2>Dehydration Management & Profit Calculator</h2>
+    </header>
+
+    <div class="grid">
+        <div class="section">
+            <h3 style="margin-top:0;">1. New Batch Details</h3>
+            
+            <label>Select Vegetable</label>
+            <select id="vegType" onchange="updateSOP()">
+                <option value="none">-- Select Item --</option>
+                <option value="carrot" data-ratio="11" data-sambar="false">Carrots (Ratio 11:1)</option>
+                <option value="potato" data-ratio="10" data-sambar="false">Potato (Ratio 10:1)</option>
+                <option value="drumstick" data-ratio="12" data-sambar="true">Drumstick (Ratio 12:1)</option>
+                <option value="cucumber" data-ratio="14" data-sambar="true">Madras Cucumber (Ratio 14:1)</option>
+                <option value="ladyfinger" data-ratio="8" data-sambar="true">Ladyfinger (Ratio 8:1)</option>
+                <option value="moringa" data-ratio="5" data-sambar="true">Moringa Leaves (Ratio 5:1)</option>
+                <option value="sambarmix" data-ratio="9" data-sambar="true">Complete Sambar Mix (Avg 9:1)</option>
+            </select>
+
+            <label>Fresh Weight (kg)</label>
+            <input type="number" id="freshWeight" placeholder="Ex: 5.0">
+
+            <label>Total Cost of Fresh Produce (₹)</label>
+            <input type="number" id="rawCost" placeholder="Ex: 250">
+
+            <label>Target Selling Price per 100g Packet (₹)</label>
+            <input type="number" id="sellPrice" placeholder="Ex: 80">
+
+            <label>Processing Date</label>
+            <input type="date" id="mfgDate">
+        </div>
+
+        <div class="section">
+            <h3 style="margin-top:0;">2. Process Guide (SOP)</h3>
+            <div id="default-msg" style="color:#777; font-style:italic;">Select a vegetable to see processing instructions.</div>
+            
+            <div id="sop-box">
+                <h4 id="sop-title">Processing Instructions</h4>
+                <ul id="sop-list"></ul>
+                <div style="margin-top:10px; font-weight:bold; color:#d32f2f;" id="sop-warning"></div>
+            </div>
+
+            <button onclick="calculateAndAdd()">Calculate & Add Batch</button>
+        </div>
+    </div>
+
+    <div class="section full-width" style="margin-top: 30px;">
+        <h3 style="margin-top:0;">3. Batch Output & Labels</h3>
+        <div class="grid">
+            <div>
+                <h4>Latest Batch Summary</h4>
+                <p><strong>Batch ID:</strong> <span id="out-id">--</span></p>
+                <p><strong>Est. Dry Yield:</strong> <span id="out-yield">0</span> kg</p>
+                <p><strong>Packets (100g):</strong> <span id="out-packets">0</span></p>
+                <p><strong>Cost per Packet:</strong> ₹<span id="out-cpp">0</span></p>
+                <p><strong>Est. Profit:</strong> <span class="badge badge-profit">₹<span id="out-profit">0</span></span></p>
+            </div>
+            <div>
+                <h4>QR Code for Packaging</h4>
+                <div id="qrcode-container">
+                    <div id="qrcode"></div>
+                    <small style="margin-top:5px; color:#888;">Scan to see Batch Info</small>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 30px;">Production Ledger</h3>
+        <table id="ledger">
+            <thead>
+                <tr>
+                    <th>Batch ID</th>
+                    <th>Item</th>
+                    <th>Fresh</th>
+                    <th>Dry Yield</th>
+                    <th>Expiry Date</th>
+                    <th>Exp. Profit</th>
+                </tr>
+            </thead>
+            <tbody id="ledger-body">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // SOP Data Base
+    const sopData = {
+        carrot: {
+            steps: ["Wash & Peel.", "Cut: 0.3-0.5 cm Rounds.", "Blanch: PLAIN boiling water (3-4 mins).", "Cool: Ice water + Citric Acid dip.", "Dry: 52°C for 6-10 hours."],
+            warning: "Do not use salt in boiling water!"
+        },
+        potato: {
+            steps: ["Peel & Wash.", "Cut: 0.5 cm Slices.", "Blanch: PLAIN boiling water (5-6 mins).", "Cool: Ice water + Citric Acid (Essential).", "Dry: 52°C for 8-12 hours."],
+            warning: "Must use Citric Acid to prevent blackening."
+        },
+        drumstick: {
+            steps: ["Wash thoroughly.", "Cut: 3-4 cm lengths.", "Blanch: SALTED boiling water (3-4 mins) OR Steam.", "Cool: Ice water immediately.", "Dry: 52°C for 12-16 hours."],
+            warning: "Salt is required to keep pulp green."
+        },
+        ladyfinger: {
+            steps: ["Wash & Dry completely before cutting.", "Cut: 1 cm rounds.", "Blanch: SALTED boiling water (2-3 mins).", "Cool: Ice water.", "Dry: 52°C for 8-10 hours."],
+            warning: "Do not over-blanch or it becomes slimy."
+        },
+        cucumber: {
+            steps: ["Peel & Remove Seeds.", "Cut: 0.5 cm Cubes.", "Blanch: PLAIN boiling water (2 mins).", "Cool: Ice water.", "Dry: 52°C for 10-14 hours."],
+            warning: "Remove all seeds to prevent spoilage."
+        },
+        moringa: {
+            steps: ["Wash leaves.", "Remove all stems.", "Blanch: Steam (1-2 mins) or Salted Dip (30s).", "Cool: Spread on cloth.", "Dry: 45°C for 3-6 hours."],
+            warning: "Keep temperature LOW (under 50°C)."
+        },
+        sambarmix: {
+            steps: ["Prep all veggies separately according to their SOP.", "Combine: Drumstick, Cucumber, Carrot, Potato.", "Dry: 52°C for 12-14 hours."],
+            warning: "Ensure Drumsticks are fully dry (snap test)."
+        }
+    };
+
+    function updateSOP() {
+        const select = document.getElementById('vegType');
+        const key = select.value;
+        const box = document.getElementById('sop-box');
+        const defaultMsg = document.getElementById('default-msg');
+        const list = document.getElementById('sop-list');
+        const warning = document.getElementById('sop-warning');
+
+        if (key === 'none') {
+            box.style.display = 'none';
+            defaultMsg.style.display = 'block';
+            return;
+        }
+
+        defaultMsg.style.display = 'none';
+        box.style.display = 'block';
+        list.innerHTML = "";
+        
+        if (sopData[key]) {
+            sopData[key].steps.forEach(step => {
+                let li = document.createElement('li');
+                li.innerText = step;
+                list.appendChild(li);
+            });
+            warning.innerText = "⚠️ " + sopData[key].warning;
+        }
+    }
+
+    function calculateAndAdd() {
+        // 1. Get Values
+        const vegSelect = document.getElementById('vegType');
+        const vegName = vegSelect.options[vegSelect.selectedIndex].text;
+        const ratio = parseFloat(vegSelect.options[vegSelect.selectedIndex].getAttribute('data-ratio'));
+        const freshWeight = parseFloat(document.getElementById('freshWeight').value);
+        const rawCost = parseFloat(document.getElementById('rawCost').value);
+        const sellPrice = parseFloat(document.getElementById('sellPrice').value);
+        const dateInput = document.getElementById('mfgDate').value;
+
+        // 2. Validation
+        if (vegSelect.value === 'none' || !freshWeight || !rawCost || !dateInput) {
+            alert("Please fill in all vegetable details, weights, costs, and date.");
+            return;
+        }
+
+        // 3. Calculations
+        const dryWeightKg = (freshWeight / ratio).toFixed(2);
+        const dryWeightGrams = dryWeightKg * 1000;
+        const totalPackets = Math.floor(dryWeightGrams / 100); // Assuming 100g packets
+        
+        // Cost Per Packet (Raw Material Only - excludes labor/power for simplicity)
+        const costPerPacket = (rawCost / totalPackets).toFixed(2);
+        
+        // Total Profit
+        const totalRevenue = totalPackets * sellPrice;
+        const totalProfit = (totalRevenue - rawCost).toFixed(2);
+
+        // Dates
+        const mfgDate = new Date(dateInput);
+        const expDate = new Date(mfgDate);
+        expDate.setFullYear(mfgDate.getFullYear() + 1);
+        const batchID = "ELR-" + Math.floor(Math.random() * 9000 + 1000);
+
+        // 4. Update Summary Panel
+        document.getElementById('out-id').innerText = batchID;
+        document.getElementById('out-yield').innerText = dryWeightKg;
+        document.getElementById('out-packets').innerText = totalPackets;
+        document.getElementById('out-cpp').innerText = costPerPacket;
+        document.getElementById('out-profit').innerText = totalProfit;
+
+        // 5. Generate QR Code
+        document.getElementById('qrcode').innerHTML = "";
+        const qrData = `ELARA ENTERPRISES\nItem: ${vegName}\nBatch: ${batchID}\nMfg: ${dateInput}\nExp: ${expDate.toLocaleDateString()}\nNet Wt: 100g`;
+        new QRCode(document.getElementById("qrcode"), {
+            text: qrData,
+            width: 120,
+            height: 120
+        });
+
+        // 6. Add to Ledger Table
+        const table = document.getElementById('ledger-body');
+        const row = `<tr>
+            <td><strong>${batchID}</strong></td>
+            <td>${vegName}</td>
+            <td>${freshWeight} kg</td>
+            <td>${dryWeightKg} kg</td>
+            <td>${expDate.toLocaleDateString()}</td>
+            <td>₹${totalProfit}</td>
+        </tr>`;
+        table.innerHTML += row;
+    }
+</script>
+
+</body>
+</html>
