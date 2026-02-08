@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELARA Enterprises | Business Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #2e7d32; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fafafa; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background-color: #2e7d32; color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #1b5e20; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #2e7d32; color: white; }
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8em; color: white; }
+        .active { background: #4caf50; }
+        #qrcode { display: flex; justify-content: center; margin-top: 15px; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header style="text-align: center;">
+        <h1>ELARA Enterprises</h1>
+        <p>Vegetable Dehydration & Sambar Mix Management</p>
+    </header>
+
+    <section class="card">
+        <h3>1. New Dehydration Batch</h3>
+        <div class="grid">
+            <div>
+                <label>Vegetable Type</label>
+                <select id="vegType">
+                    <option value="11">Carrots (11:1)</option>
+                    <option value="12">Drumstick (12:1)</option>
+                    <option value="10">Potato (10:1)</option>
+                    <option value="14">Madras Cucumber (14:1)</option>
+                    <option value="8">Ladyfinger (8:1)</option>
+                    <option value="5">Moringa Leaves (5:1)</option>
+                </select>
+                <input type="number" id="freshWeight" placeholder="Fresh Weight (kg)">
+            </div>
+            <div>
+                <label>Processing Date</label>
+                <input type="date" id="mfgDate">
+                <button onclick="logBatch()">Generate Batch Record</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid" style="margin-top:20px;">
+        <div class="card">
+            <h3>2. Label & QR Generator</h3>
+            <input type="text" id="qrInput" placeholder="Enter Batch ID or URL">
+            <button onclick="generateQRCode()">Create QR for Packaging</button>
+            <div id="qrcode"></div>
+        </div>
+        <div class="card">
+            <h3>3. SOP Checklist</h3>
+            <div style="font-size: 0.85em;">
+                <input type="checkbox"> Clean/Wash (Chlorine 50ppm)<br>
+                <input type="checkbox"> Blanch (Salt for Green Veggies)<br>
+                <input type="checkbox"> Ice Shock (3-5 Mins)<br>
+                <input type="checkbox"> Citric Acid Dip (Potatoes/Carrots)<br>
+                <input type="checkbox"> Tray Loading (Single Layer)
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h3>4. Production Records</h3>
+        <table id="recordsTable">
+            <thead>
+                <tr>
+                    <th>Batch ID</th>
+                    <th>Veg</th>
+                    <th>Fresh</th>
+                    <th>Est. Dry</th>
+                    <th>Expiry</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </section>
+</div>
+
+<script>
+    function logBatch() {
+        const vegSelect = document.getElementById('vegType');
+        const vegName = vegSelect.options[vegSelect.selectedIndex].text;
+        const ratio = vegSelect.value;
+        const weight = document.getElementById('freshWeight').value;
+        const dateVal = document.getElementById('mfgDate').value;
+
+        if (!weight || !dateVal) { alert("Fill all fields"); return; }
+
+        const mfgDate = new Date(dateVal);
+        const expDate = new Date(mfgDate);
+        expDate.setFullYear(mfgDate.getFullYear() + 1);
+
+        const dryWeight = (weight / ratio).toFixed(2);
+        const batchID = "ELR-" + Math.floor(Math.random() * 9000 + 1000);
+
+        const row = `<tr>
+            <td><strong>${batchID}</strong></td>
+            <td>${vegName}</td>
+            <td>${weight}kg</td>
+            <td>${dryWeight}kg</td>
+            <td>${expDate.toLocaleDateString()}</td>
+            <td><span class="status-badge active">Drying</span></td>
+        </tr>`;
+
+        document.getElementById('tableBody').innerHTML += row;
+        document.getElementById('qrInput').value = `${batchID} | EXP: ${expDate.toLocaleDateString()}`;
+    }
+
+    function generateQRCode() {
+        const container = document.getElementById("qrcode");
+        container.innerHTML = "";
+        const val = document.getElementById("qrInput").value;
+        if (val) {
+            new QRCode(container, { text: val, width: 100, height: 100 });
+        }
+    }
+</script>
+
+</body>
+</html>
